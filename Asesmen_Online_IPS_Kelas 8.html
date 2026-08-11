@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asesmen Sumatif IPS — Kelas VIII</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy:#1F3864;
+    --navy-deep:#132542;
+    --gold:#C9A24B;
+    --paper:#F7F5F0;
+    --ink:#1D2430;
+    --line:#D8DEE9;
+    --danger:#B3261E;
+    --ok:#1E7A46;
+    --card:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Georgia','Iowan Old Style',serif;
+    background:var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    -webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;
+  }
+  .sans{font-family:'Helvetica Neue',Arial,sans-serif;}
+  ::selection{background:transparent;}
+  #app{max-width:900px;margin:0 auto;padding:24px 20px 80px;}
+
+  /* ===== TOP BAR ===== */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    background:var(--navy);color:#fff;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 22px;border-radius:0 0 10px 10px;
+    box-shadow:0 4px 14px rgba(19,37,66,.25);
+  }
+  .topbar .brand{font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.85;}
+  .topbar .brand strong{display:block;font-family:Georgia,serif;font-size:17px;letter-spacing:0;text-transform:none;margin-top:2px;}
+  .timer{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:26px;font-weight:700;letter-spacing:.03em;
+    background:var(--navy-deep);padding:8px 16px;border-radius:8px;
+    border:1px solid rgba(255,255,255,.15);
+    min-width:110px;text-align:center;
+  }
+  .timer.warn{background:#5C2A22;color:#FFD9D0;animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+
+  /* ===== SCREENS ===== */
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:32px;margin-top:22px;box-shadow:0 2px 10px rgba(31,56,100,.05);}
+
+  h1{font-size:26px;margin:0 0 6px;color:var(--navy);}
+  h2{font-size:19px;color:var(--navy);margin:0 0 14px;border-bottom:2px solid var(--gold);padding-bottom:8px;}
+  .sub{font-family:'Helvetica Neue',Arial,sans-serif;color:#5b6470;font-size:14px;margin-bottom:20px;}
+
+  label.field-label{font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;color:var(--navy-deep);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+  input[type=text]{
+    width:100%;padding:11px 14px;font-size:16px;border:1.5px solid var(--line);border-radius:8px;
+    margin-bottom:18px;font-family:Georgia,serif;background:#fff;-webkit-user-select:text;user-select:text;
+  }
+  input[type=text]:focus{outline:none;border-color:var(--navy);}
+
+  .rule-list{font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;line-height:1.75;color:#333;}
+  .rule-list li{margin-bottom:6px;}
+
+  .btn{
+    font-family:'Helvetica Neue',Arial,sans-serif;font-weight:700;font-size:15px;
+    padding:13px 26px;border-radius:8px;border:none;cursor:pointer;
+    background:var(--navy);color:#fff;letter-spacing:.02em;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(31,56,100,.3);}
+  .btn:active{transform:translateY(0);}
+  .btn.secondary{background:#fff;color:var(--navy);border:1.5px solid var(--navy);}
+  .btn.gold{background:var(--gold);color:var(--navy-deep);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+
+  .warn-banner{
+    background:#FBEDEB;border:1.5px solid var(--danger);color:#7A241C;
+    font-family:'Helvetica Neue',Arial,sans-serif;font-size:13.5px;
+    padding:12px 16px;border-radius:8px;margin-bottom:18px;display:none;
+  }
+  .warn-banner.show{display:block;}
+
+  /* ===== NAV GRID ===== */
+  .navgrid{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin:18px 0 24px;}
+  .navgrid button{
+    font-family:'Helvetica Neue',Arial,sans-serif;font-size:12.5px;font-weight:700;
+    height:34px;border-radius:6px;border:1.5px solid var(--line);background:#fff;color:#444;cursor:pointer;
+  }
+  .navgrid button.answered{background:#EAF1FB;border-color:var(--navy);color:var(--navy);}
+  .navgrid button.current{background:var(--navy);border-color:var(--navy);color:#fff;}
+
+  /* ===== QUESTION ===== */
+  .qmeta{font-family:'Helvetica Neue',Arial,sans-serif;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--gold);font-weight:700;margin-bottom:10px;}
+  .qstem{font-size:18px;line-height:1.6;margin-bottom:20px;white-space:pre-line;}
+  .opt{
+    display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1.5px solid var(--line);
+    border-radius:9px;margin-bottom:10px;cursor:pointer;transition:background .12s, border-color .12s;
+  }
+  .opt:hover{background:#F5F8FC;}
+  .opt.checked{border-color:var(--navy);background:#EAF1FB;}
+  .opt input{margin-top:3px;pointer-events:none;}
+  .opt .lab{font-weight:700;color:var(--navy);min-width:20px;}
+  .opt .txt{font-size:16px;line-height:1.5;}
+
+  .qnav{display:flex;justify-content:space-between;margin-top:26px;gap:10px;}
+
+  .footer-note{font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#8a93a1;text-align:center;margin-top:26px;}
+
+  /* ===== RESULT ===== */
+  .score-hero{text-align:center;padding:18px 0 8px;}
+  .score-num{font-size:64px;font-weight:700;color:var(--navy);font-family:'Helvetica Neue',Arial,sans-serif;}
+  .score-label{font-family:'Helvetica Neue',Arial,sans-serif;color:#5b6470;font-size:14px;text-transform:uppercase;letter-spacing:.06em;}
+  .predikat{display:inline-block;margin-top:10px;padding:6px 18px;border-radius:20px;font-family:'Helvetica Neue',Arial,sans-serif;font-weight:700;font-size:13px;}
+
+  table.recap{width:100%;border-collapse:collapse;margin-top:20px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13.5px;}
+  table.recap th{background:var(--navy);color:#fff;padding:8px;text-align:left;}
+  table.recap td{padding:7px 8px;border-bottom:1px solid var(--line);}
+  table.recap tr:nth-child(even){background:#FAFBFD;}
+
+  .lockscreen{
+    position:fixed;inset:0;background:rgba(19,37,66,.96);color:#fff;z-index:999;
+    display:none;align-items:center;justify-content:center;text-align:center;padding:30px;
+  }
+  .lockscreen.show{display:flex;flex-direction:column;}
+  .lockscreen h2{color:#fff;border:none;}
+
+  @media(max-width:600px){
+    .navgrid{grid-template-columns:repeat(5,1fr);}
+    .score-num{font-size:48px;}
+    .card{padding:20px;}
+  }
+</style>
+</head>
+<body oncontextmenu="return false;">
+
+<div id="lockscreen" class="lockscreen">
+  <h2>⚠ Mode Layar Penuh Diperlukan</h2>
+  <p class="sans" style="max-width:420px;">Asesmen ini harus dikerjakan dalam mode layar penuh. Klik tombol di bawah untuk melanjutkan pengerjaan.</p>
+  <button class="btn gold" style="margin-top:14px;" onclick="reenterFullscreen()">Kembali ke Layar Penuh</button>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="brand">Asesmen Sumatif Lingkup Materi<strong id="topbarTitle">IPS — Kelas VIII</strong></div>
+    <div id="timerBox" class="timer">40:00</div>
+  </div>
+
+  <!-- ===== SCREEN 0: START ===== -->
+  <div class="screen active" id="screen-start">
+    <div class="card">
+      <h1>Asesmen Sumatif Lingkup Materi</h1>
+      <div class="sub">Ilmu Pengetahuan Sosial · Kelas VIII · Kebutuhan, Kelangkaan, Ketenagakerjaan &amp; Investasi</div>
+
+      <label class="field-label">Nama Peserta Didik</label>
+      <input type="text" id="inputNama" placeholder="Tulis nama lengkap">
+
+      <label class="field-label">Kelas</label>
+      <input type="text" id="inputKelas" placeholder="Contoh: VIII A">
+
+      <h2 style="margin-top:26px;">Petunjuk Pengerjaan</h2>
+      <ul class="rule-list">
+        <li>Asesmen terdiri atas <strong>40 butir soal</strong> (32 Pilihan Ganda, 8 Pilihan Ganda Kompleks) dengan alokasi waktu <strong>40 menit</strong>.</li>
+        <li>Setelah menekan tombol "Mulai Asesmen", layar akan otomatis masuk ke mode <strong>layar penuh (fullscreen)</strong> dan tidak boleh keluar sampai asesmen selesai.</li>
+        <li>Sistem akan <strong>mendeteksi jika kamu berpindah tab atau aplikasi lain</strong>. Pelanggaran akan dicatat pada laporan hasil.</li>
+        <li><strong>Salin, tempel, dan klik kanan dinonaktifkan</strong> selama asesmen berlangsung.</li>
+        <li>Waktu pengerjaan berjalan mundur secara otomatis dan asesmen akan <strong>terkirim otomatis</strong> saat waktu habis.</li>
+        <li>Setelah dikumpulkan, hasil (nilai, jawaban, dan skor) akan <strong>otomatis terkirim ke spreadsheet guru</strong> jika perangkat terhubung internet. Kamu tetap dapat mengunduh salinan hasil dalam format Excel.</li>
+        <li>Jawaban dapat diubah kapan pun sebelum waktu habis dengan berpindah antarnomor menggunakan panel navigasi soal.</li>
+      </ul>
+
+      <div class="warn-banner" id="startWarn"></div>
+      <button class="btn" id="btnStart" onclick="startExam()">Mulai Asesmen &amp; Masuk Layar Penuh →</button>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 1: EXAM ===== -->
+  <div class="screen" id="screen-exam">
+    <div class="warn-banner" id="examWarn"></div>
+    <div class="card">
+      <div class="navgrid" id="navGrid"></div>
+      <div class="qmeta" id="qMeta"></div>
+      <div class="qstem" id="qStem"></div>
+      <div id="qOptions"></div>
+      <div class="qnav">
+        <button class="btn secondary" id="btnPrev" onclick="goPrev()">← Sebelumnya</button>
+        <button class="btn secondary" id="btnNext" onclick="goNext()">Berikutnya →</button>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:24px;">
+      <button class="btn gold" onclick="confirmSubmit()">Kumpulkan Jawaban</button>
+    </div>
+    <div class="footer-note">Terjawab: <span id="answeredCount">0</span> / 40</div>
+  </div>
+
+  <!-- ===== SCREEN 2: RESULT ===== -->
+  <div class="screen" id="screen-result">
+    <div class="card">
+      <div class="score-hero">
+        <div class="score-label">Nilai Akhir</div>
+        <div class="score-num" id="finalScore">0</div>
+        <div id="predikatBox"></div>
+      </div>
+      <div class="sub" style="text-align:center;">
+        Skor Perolehan: <strong id="rawScore">0</strong> / 48 &nbsp;•&nbsp; Benar Penuh: <span id="fullCorrect">0</span> soal &nbsp;•&nbsp; Percobaan Pindah Tab: <span id="tabSwitchCount">0</span>
+      </div>
+      <div style="text-align:center;margin-top:20px;">
+        <button class="btn" onclick="downloadExcel()">⬇ Unduh Hasil (Excel)</button>
+      </div>
+      <div class="sub" id="sheetStatus" style="text-align:center;margin-top:12px;"></div>
+      <table class="recap" id="recapTable"></table>
+    </div>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [{"no":1,"materi":"Pengertian Kebutuhan","indikator":"Menjelaskan pengertian kebutuhan melalui ilustrasi kehidupan sehari-hari","level":"C2","tipe":"PG","sukar":"Mudah","stem":"Setiap pagi, Bu Ratna harus makan agar mempunyai tenaga untuk bekerja di sawah. Jika ia tidak makan, tubuhnya akan lemas dan tidak dapat beraktivitas dengan baik. Kondisi tersebut menunjukkan bahwa makan bagi Bu Ratna termasuk ....","opsi":["Keinginan yang harus dipenuhi","Kebutuhan yang harus dipenuhi agar dapat hidup layak","Kebiasaan turun-temurun keluarga","Kegiatan konsumsi yang bersifat sementara"],"kunci":"B"},{"no":2,"materi":"Pengertian Kebutuhan","indikator":"Membedakan kebutuhan dan keinginan berdasarkan kasus","level":"C2","tipe":"PG","sukar":"Mudah","stem":"Perhatikan pernyataan berikut.\n(1) Ani ingin memiliki tas bermerek terbaru.\n(2) Ani membutuhkan seragam sekolah untuk mengikuti pelajaran.\nPerbedaan mendasar antara kebutuhan dan keinginan pada ilustrasi tersebut adalah ....","opsi":["Kebutuhan bersifat mendesak dan wajib dipenuhi, sedangkan keinginan bersifat pelengkap dan dapat ditunda","Kebutuhan hanya dimiliki orang kaya, sedangkan keinginan dimiliki semua orang","Kebutuhan berkaitan dengan barang mahal, sedangkan keinginan berkaitan dengan barang murah","Kebutuhan dan keinginan sebenarnya adalah hal yang sama"],"kunci":"A"},{"no":3,"materi":"Pengertian Kebutuhan","indikator":"Menganalisis faktor penyebab bertambahnya kebutuhan manusia","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Keluarga Pak Joko memiliki penghasilan terbatas. Meskipun demikian, kebutuhan mereka terhadap pangan, sandang, dan papan tidak pernah berhenti, bahkan cenderung bertambah setiap tahun. Faktor yang paling memengaruhi terus bertambahnya kebutuhan keluarga Pak Joko adalah ....","opsi":["Jumlah anggota keluarga dan perkembangan zaman","Warna kesukaan anggota keluarga","Jumlah hewan peliharaan di rumah","Bentuk rumah yang ditempati"],"kunci":"A"},{"no":4,"materi":"Jenis-Jenis Kebutuhan","indikator":"Mengidentifikasi kebutuhan menurut tingkat intensitas (primer)","level":"C2","tipe":"PG","sukar":"Mudah","stem":"Beras, pakaian, dan rumah adalah kebutuhan yang harus dipenuhi terlebih dahulu sebelum kebutuhan lain karena berkaitan langsung dengan kelangsungan hidup manusia. Kebutuhan tersebut digolongkan sebagai kebutuhan ....","opsi":["Tersier","Sekunder","Primer","Rohani"],"kunci":"C"},{"no":5,"materi":"Jenis-Jenis Kebutuhan","indikator":"Mengidentifikasi kebutuhan menurut sifatnya (rohani)","level":"C2","tipe":"PG","sukar":"Mudah","stem":"Setelah bekerja seharian, Pak Dedi merasa lelah dan memutuskan untuk beribadah serta mendengarkan ceramah agar hatinya lebih tenang. Kegiatan tersebut merupakan pemenuhan kebutuhan ....","opsi":["Jasmani","Rohani","Primer","Sekarang"],"kunci":"B"},{"no":6,"materi":"Jenis-Jenis Kebutuhan","indikator":"Menganalisis kebutuhan menurut waktu pemenuhannya (tidak terduga)","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Sebuah keluarga di daerah rawan banjir menyisihkan sebagian pendapatannya untuk membeli perahu karet dan kotak P3K, meskipun banjir belum tentu terjadi tahun ini. Tindakan tersebut merupakan upaya memenuhi kebutuhan ....","opsi":["Sekarang","Masa akan datang","Tidak terduga","Individu"],"kunci":"C"},{"no":7,"materi":"Jenis-Jenis Kebutuhan","indikator":"Menganalisis kebutuhan menurut subjek yang membutuhkan (kolektif)","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Pemerintah desa membangun jembatan yang dapat digunakan oleh seluruh warga desa untuk mengangkut hasil pertanian ke pasar. Pembangunan jembatan tersebut termasuk pemenuhan kebutuhan ....","opsi":["Individu","Kolektif","Primer","Jasmani"],"kunci":"B"},{"no":8,"materi":"Jenis-Jenis Kebutuhan","indikator":"Mengevaluasi beberapa pernyataan tentang jenis-jenis kebutuhan","level":"C4","tipe":"PGK","sukar":"Sedang","stem":"Perhatikan pernyataan-pernyataan berikut. Pilihlah pernyataan yang BENAR mengenai jenis-jenis kebutuhan manusia! (Jawaban benar lebih dari satu)","opsi":["Kebutuhan primer harus dipenuhi lebih dahulu daripada kebutuhan tersier","Payung yang dibeli saat musim hujan tiba merupakan kebutuhan sekarang","Kebutuhan rohani hanya dapat dipenuhi dengan uang","Dana darurat untuk kecelakaan termasuk kebutuhan tidak terduga","Kebutuhan kolektif hanya dapat dipenuhi oleh individu tertentu"],"kunci":["A","B","D"]},{"no":9,"materi":"Jenis-Jenis Kebutuhan","indikator":"Menganalisis kasus penggolongan kebutuhan berdasarkan waktu","level":"C4","tipe":"PG","sukar":"Sukar","stem":"Keluarga nelayan di pesisir mengalokasikan pendapatan musim panen ikan untuk: (1) membeli beras dan lauk untuk makan sehari-hari; (2) menabung untuk biaya sekolah anak tahun depan; (3) membeli jaring baru karena jaring lama rusak dan besok pagi harus melaut; (4) menyumbang pembangunan musala kampung yang dapat dipakai seluruh warga. Pasangan yang tepat antara kegiatan dan jenis kebutuhan berdasarkan waktu serta subjek adalah ....","opsi":["(1) sekarang, (2) akan datang, (3) sekarang, (4) kolektif","(1) akan datang, (2) sekarang, (3) tidak terduga, (4) individu","(1) sekarang, (2) sekarang, (3) akan datang, (4) tidak terduga","(1) tidak terduga, (2) akan datang, (3) sekarang, (4) kolektif"],"kunci":"A"},{"no":10,"materi":"Alat Pemuas Kebutuhan","indikator":"Membedakan benda bebas dan benda ekonomi","level":"C2","tipe":"PG","sukar":"Mudah","stem":"Udara yang kita hirup untuk bernapas dapat diperoleh tanpa harus membelinya, sedangkan air minum kemasan harus dibeli di toko dengan sejumlah uang. Berdasarkan ilustrasi tersebut, udara termasuk benda ....","opsi":["Ekonomi","Bebas","Substitusi","Komplementer"],"kunci":"B"},{"no":11,"materi":"Alat Pemuas Kebutuhan","indikator":"Menganalisis hubungan benda substitusi dalam kasus perubahan harga","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Ketika harga daging sapi naik, banyak ibu rumah tangga beralih membeli daging ayam sebagai lauk pengganti untuk keluarganya. Hubungan antara daging sapi dan daging ayam pada kasus tersebut adalah ....","opsi":["Komplementer","Substitusi","Bebas","Ekonomi"],"kunci":"B"},{"no":12,"materi":"Alat Pemuas Kebutuhan","indikator":"Mengidentifikasi kedudukan benda menurut proses pembuatannya","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Kapas yang dipanen petani diolah menjadi benang, kemudian benang ditenun menjadi kain, dan kain dijahit menjadi baju siap pakai. Kapas dalam rangkaian proses tersebut berkedudukan sebagai ....","opsi":["Barang jadi","Barang setengah jadi","Bahan mentah","Barang komplementer"],"kunci":"C"},{"no":13,"materi":"Alat Pemuas Kebutuhan","indikator":"Menganalisis penggolongan benda menurut tujuan penggunaannya","level":"C4","tipe":"PGK","sukar":"Sedang","stem":"Bu Sari membeli mesin jahit untuk menjahit baju pesanan pelanggan di rumahnya, sedangkan Pak Anton membeli mesin jahit yang sama hanya untuk memperbaiki pakaian anggota keluarganya sendiri. Pernyataan yang tepat terkait tujuan penggunaan barang tersebut adalah .... (Jawaban benar lebih dari satu)","opsi":["Mesin jahit Bu Sari termasuk barang produksi","Mesin jahit Pak Anton termasuk barang produksi","Mesin jahit Pak Anton termasuk barang konsumsi","Jenis barang ditentukan oleh tujuan penggunaannya, bukan oleh bentuk fisik barang","Mesin jahit selalu termasuk barang konsumsi di mana pun digunakan"],"kunci":["A","C","D"]},{"no":14,"materi":"Alat Pemuas Kebutuhan","indikator":"Menganalisis kasus gabungan penggolongan alat pemuas kebutuhan","level":"C4","tipe":"PG","sukar":"Sukar","stem":"Sebuah keluarga petani memanfaatkan air hujan untuk menyiram tanaman tanpa biaya, membeli pupuk kimia di toko pertanian, menggunakan traktor sewaan yang hanya dapat berfungsi bersama bahan bakar solar, serta mengolah gabah menjadi beras sebelum dijual ke pasar. Berdasarkan ilustrasi tersebut, pupuk dan solar termasuk contoh benda ....","opsi":["Bebas dan substitusi","Ekonomi dan komplementer","Ekonomi dan substitusi","Bebas dan komplementer"],"kunci":"B"},{"no":15,"materi":"Kelangkaan","indikator":"Menjelaskan pengertian kelangkaan dalam ilmu ekonomi","level":"C2","tipe":"PG","sukar":"Mudah","stem":"Kelangkaan dalam ilmu ekonomi terjadi ketika ....","opsi":["Barang di pasar habis terjual karena ada diskon besar","Jumlah kebutuhan manusia tidak terbatas, sedangkan sumber daya untuk memenuhinya terbatas","Harga barang naik karena permintaan meningkat","Pemerintah melarang penjualan suatu jenis barang"],"kunci":"B"},{"no":16,"materi":"Kelangkaan","indikator":"Menganalisis faktor penyebab kelangkaan sumber daya","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Setiap musim kemarau panjang, sejumlah wilayah mengalami kesulitan air bersih karena sumber mata air mengering dan tidak sebanding dengan jumlah penduduk yang terus bertambah. Faktor utama penyebab kelangkaan air bersih pada kasus tersebut adalah ....","opsi":["Keterbatasan sumber daya alam dan pertambahan jumlah penduduk","Rendahnya harga air di pasaran","Banyaknya produsen air minum kemasan","Kebijakan pemerintah tentang pajak air"],"kunci":"A"},{"no":17,"materi":"Kelangkaan","indikator":"Membedakan penyebab kelangkaan akibat SDA dan SDM","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Suatu daerah memiliki lahan pertanian yang subur dan luas, tetapi hasil panennya tetap rendah karena petani belum menguasai teknik pengolahan lahan yang efisien dan kurangnya alat pertanian modern. Penyebab kelangkaan hasil pertanian pada kasus tersebut lebih disebabkan oleh keterbatasan ....","opsi":["Sumber daya alam","Sumber daya manusia dan teknologi","Modal usaha semata","Lembaga keuangan desa"],"kunci":"B"},{"no":18,"materi":"Kelangkaan","indikator":"Menganalisis faktor-faktor penyebab kelangkaan pada kasus nyata","level":"C4","tipe":"PGK","sukar":"Sukar","stem":"Pada suatu masa, harga minyak goreng di pasaran melonjak tajam dan langka di sejumlah toko. Berdasarkan kasus tersebut, faktor-faktor yang dapat menyebabkan kelangkaan minyak goreng adalah .... (Jawaban benar lebih dari satu)","opsi":["Terbatasnya pasokan bahan baku kelapa sawit","Meningkatnya permintaan masyarakat menjelang hari besar","Turunnya jumlah penduduk secara drastis","Terganggunya distribusi akibat kendala transportasi","Meningkatnya jumlah sumber daya alam secara tiba-tiba"],"kunci":["A","B","D"]},{"no":19,"materi":"Kelangkaan","indikator":"Menentukan solusi atas kasus kelangkaan sumber daya di suatu wilayah","level":"C4","tipe":"PG","sukar":"Sukar","stem":"Sebuah pulau kecil memiliki sumber daya ikan yang melimpah, tetapi penduduknya kesulitan memperoleh sayur dan buah karena kondisi tanah tidak subur dan jarak ke pulau lain cukup jauh. Untuk mengatasi kelangkaan tersebut, tindakan paling tepat yang dapat dilakukan penduduk adalah ....","opsi":["Membiarkan kondisi tersebut karena sudah menjadi kondisi alam yang tidak dapat diubah","Melakukan pertukaran atau perdagangan hasil laut dengan sayur dan buah dari pulau lain","Berhenti mengonsumsi sayur dan buah untuk seterusnya","Menaikkan harga ikan setinggi-tingginya kepada sesama penduduk pulau"],"kunci":"B"},{"no":20,"materi":"Skala Prioritas Kebutuhan","indikator":"Menjelaskan pengertian skala prioritas kebutuhan","level":"C2","tipe":"PG","sukar":"Mudah","stem":"Daftar kebutuhan yang disusun berdasarkan tingkat kepentingan, mulai dari yang paling mendesak hingga yang dapat ditunda pemenuhannya, disebut ....","opsi":["Anggaran belanja","Skala prioritas","Daftar keinginan","Neraca keuangan"],"kunci":"B"},{"no":21,"materi":"Skala Prioritas Kebutuhan","indikator":"Menganalisis faktor yang memengaruhi penyusunan skala prioritas","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Dua orang siswa memiliki daftar kebutuhan yang berbeda meskipun tinggal di kota yang sama. Faktor yang paling memengaruhi perbedaan skala prioritas kebutuhan antarindividu adalah ....","opsi":["Warna favorit masing-masing siswa","Tingkat pendapatan, status sosial, dan lingkungan tempat tinggal","Jumlah teman di media sosial","Jenis kendaraan yang dimiliki tetangga"],"kunci":"B"},{"no":22,"materi":"Skala Prioritas Kebutuhan","indikator":"Menerapkan prinsip skala prioritas pada kasus anggaran keluarga","level":"C4","tipe":"PG","sukar":"Sedang","stem":"Penghasilan Pak Amir bulan ini turun karena sepi pesanan di bengkelnya. Ia harus memilih antara membayar cicilan sepeda motor, membeli seragam sekolah anak yang sudah sobek, atau membeli televisi baru. Berdasarkan prinsip skala prioritas, urutan yang paling tepat didahulukan oleh Pak Amir adalah ....","opsi":["Televisi baru, seragam sekolah, cicilan motor","Seragam sekolah, cicilan motor, televisi baru","Cicilan motor, televisi baru, seragam sekolah","Televisi baru, cicilan motor, seragam sekolah"],"kunci":"B"},{"no":23,"materi":"Skala Prioritas Kebutuhan","indikator":"Mengevaluasi penyusunan skala prioritas pada kasus rumah tangga","level":"C4","tipe":"PGK","sukar":"Sukar","stem":"Bu Wati adalah seorang pedagang kecil dengan pendapatan pas-pasan. Bulan ini anaknya sakit dan membutuhkan biaya berobat, sementara warung sembakonya kehabisan stok gula dan minyak yang mulai dicari pembeli. Pernyataan yang tepat mengenai penyusunan skala prioritas Bu Wati adalah .... (Jawaban benar lebih dari satu)","opsi":["Biaya berobat anak sebaiknya didahulukan karena berkaitan dengan kesehatan dan bersifat mendesak","Pembelian stok dagangan tetap penting karena berkaitan dengan sumber pendapatan keluarga","Bu Wati sebaiknya membeli barang mewah terlebih dahulu agar terlihat sukses di lingkungannya","Penyusunan skala prioritas perlu mempertimbangkan tingkat kemendesakan dan dampak jangka panjang","Skala prioritas tidak perlu disusun karena semua kebutuhan dianggap sama pentingnya"],"kunci":["A","B","D"]},{"no":24,"materi":"Skala Prioritas Kebutuhan","indikator":"Mengevaluasi dampak keputusan yang tidak sesuai skala prioritas","level":"C5","tipe":"PG","sukar":"Sukar","stem":"Seorang siswa memiliki uang saku terbatas dan harus memilih antara membeli buku tulis yang sudah habis atau jajan bersama teman-teman setiap hari. Jika siswa tersebut lebih memilih jajan setiap hari sehingga tidak memiliki cukup uang untuk membeli buku tulis, dampak yang paling mungkin terjadi adalah ....","opsi":["Prestasi belajarnya akan meningkat pesat","Kegiatan belajarnya dapat terganggu karena kebutuhan penunjang belajar tidak terpenuhi","Ia akan menjadi lebih populer di sekolah","Tidak ada dampak apa pun bagi kegiatan belajarnya"],"kunci":"B"},{"no":25,"materi":"Jenis-Jenis Tenaga Kerja","indikator":"Mengidentifikasi tenaga kerja terdidik","level":"C2","tipe":"PG","sukar":"Mudah","stem":"Seorang dokter harus menempuh pendidikan kedokteran selama bertahun-tahun sebelum dapat membuka praktik secara resmi. Dokter tersebut termasuk contoh tenaga kerja ....","opsi":["Terdidik","Terlatih","Tidak terdidik","Tidak terlatih"],"kunci":"A"},{"no":26,"materi":"Jenis-Jenis Tenaga Kerja","indikator":"Membedakan tenaga kerja terlatih berdasarkan sumber keahliannya","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Seorang montir andal memperoleh keahliannya dari pengalaman bertahun-tahun bekerja di bengkel, bukan dari pendidikan formal khusus otomotif. Montir tersebut termasuk tenaga kerja ....","opsi":["Terdidik","Terlatih","Tidak terdidik dan tidak terlatih","Pengangguran terselubung"],"kunci":"B"},{"no":27,"materi":"Jenis-Jenis Tenaga Kerja","indikator":"Mengurutkan kualifikasi tenaga kerja berdasarkan contoh profesi","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Perhatikan daftar pekerjaan berikut.\n(1) Guru\n(2) Sopir bus antarkota\n(3) Buruh angkut di pasar\nUrutan yang tepat menggambarkan kualifikasi tenaga kerja terdidik, terlatih, dan tidak terdidik secara berurutan adalah ....","opsi":["(1), (2), (3)","(2), (1), (3)","(3), (2), (1)","(1), (3), (2)"],"kunci":"A"},{"no":28,"materi":"Jenis-Jenis Tenaga Kerja","indikator":"Mengevaluasi upaya peningkatan kualitas tenaga kerja","level":"C4","tipe":"PGK","sukar":"Sedang","stem":"Pemerintah suatu daerah berencana meningkatkan kualitas tenaga kerja agar mampu bersaing di pasar kerja. Pernyataan yang tepat mengenai upaya peningkatan kualitas tenaga kerja adalah .... (Jawaban benar lebih dari satu)","opsi":["Menyelenggarakan pelatihan keterampilan (vokasi) bagi calon tenaga kerja","Meningkatkan akses pendidikan formal bagi masyarakat","Membiarkan tenaga kerja bekerja tanpa pembekalan keterampilan","Memberikan beasiswa pendidikan kejuruan","Mengurangi anggaran pendidikan dan pelatihan kerja"],"kunci":["A","B","D"]},{"no":29,"materi":"Jenis-Jenis Tenaga Kerja","indikator":"Menganalisis kesenjangan kualitas tenaga kerja dengan kebutuhan industri","level":"C4","tipe":"PG","sukar":"Sukar","stem":"Sebuah pabrik tekstil kesulitan mencari karyawan yang mampu mengoperasikan mesin produksi berteknologi baru, meskipun banyak pencari kerja di sekitar pabrik tersebut. Permasalahan tersebut menunjukkan bahwa tenaga kerja di sekitar pabrik mengalami ....","opsi":["Kelebihan keterampilan dibandingkan kebutuhan industri","Kesenjangan antara keterampilan yang dimiliki dan kebutuhan dunia kerja","Kelebihan pendidikan formal dibandingkan kebutuhan pabrik","Kondisi yang tidak berkaitan dengan kualitas tenaga kerja"],"kunci":"B"},{"no":30,"materi":"Pengangguran","indikator":"Mengidentifikasi pengangguran friksional dari kasus mencari kerja","level":"C2","tipe":"PG","sukar":"Mudah","stem":"Setelah mengundurkan diri dari pekerjaan lama, Rian membutuhkan waktu dua bulan untuk mencari dan mendapatkan pekerjaan baru yang sesuai dengan keahliannya. Kondisi Rian selama masa mencari kerja tersebut disebut pengangguran ....","opsi":["Struktural","Friksional","Musiman","Siklikal"],"kunci":"B"},{"no":31,"materi":"Pengangguran","indikator":"Menganalisis pengangguran struktural akibat perubahan teknologi","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Banyak buruh pabrik tekstil kehilangan pekerjaan setelah perusahaan beralih menggunakan mesin otomatis sehingga keterampilan menjahit manual mereka tidak lagi dibutuhkan. Jenis pengangguran yang dialami para buruh tersebut adalah pengangguran ....","opsi":["Friksional","Struktural","Musiman","Terbuka"],"kunci":"B"},{"no":32,"materi":"Pengangguran","indikator":"Mengidentifikasi pengangguran musiman pada sektor pertanian","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Petani padi di suatu desa tidak memiliki pekerjaan selama masa menunggu panen karena lahan sudah selesai ditanami dan belum saatnya dipanen. Kondisi tersebut termasuk pengangguran ....","opsi":["Musiman","Struktural","Siklikal","Terselubung"],"kunci":"A"},{"no":33,"materi":"Pengangguran","indikator":"Membedakan karakteristik pengangguran siklikal dan terselubung","level":"C3","tipe":"PGK","sukar":"Sedang","stem":"Perhatikan pernyataan-pernyataan berikut mengenai jenis pengangguran. Pilihlah pernyataan yang BENAR! (Jawaban benar lebih dari satu)","opsi":["Pengangguran siklikal terjadi akibat naik turunnya kondisi perekonomian secara umum","Pengangguran terselubung terjadi ketika seseorang bekerja tetapi tidak sesuai kemampuan atau waktu kerjanya kurang optimal","Pengangguran terbuka adalah orang yang bekerja penuh waktu dengan produktivitas tinggi","Resesi ekonomi dapat memicu meningkatnya pengangguran siklikal","Pengangguran terselubung sama artinya dengan pengangguran terbuka"],"kunci":["A","B","D"]},{"no":34,"materi":"Pengangguran","indikator":"Menganalisis kasus untuk menentukan jenis pengangguran terselubung","level":"C4","tipe":"PG","sukar":"Sukar","stem":"Seorang sarjana pertanian bekerja sebagai penjaga toko karena belum mendapatkan pekerjaan sesuai bidang keahliannya, sehingga kemampuannya tidak digunakan secara optimal. Kondisi tersebut termasuk pengangguran ....","opsi":["Terbuka","Terselubung","Musiman","Friksional"],"kunci":"B"},{"no":35,"materi":"Dampak Pengangguran","indikator":"Menganalisis dampak pengangguran terhadap bidang ekonomi","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Tingginya angka pengangguran di suatu daerah menyebabkan daya beli masyarakat menurun sehingga banyak usaha kecil kehilangan pembeli dan pendapatan daerah pun ikut menurun. Ilustrasi tersebut menunjukkan dampak pengangguran terhadap bidang ....","opsi":["Ekonomi","Budaya","Politik","Lingkungan"],"kunci":"A"},{"no":36,"materi":"Dampak Pengangguran","indikator":"Menganalisis dampak pengangguran terhadap bidang sosial","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Di sejumlah wilayah dengan tingkat pengangguran tinggi, angka kriminalitas seperti pencurian dan perampokan cenderung meningkat karena banyak orang kesulitan memenuhi kebutuhan hidup. Dampak pengangguran pada kasus tersebut termasuk dampak di bidang ....","opsi":["Ekonomi","Sosial","Teknologi","Investasi"],"kunci":"B"},{"no":37,"materi":"Dampak Pengangguran","indikator":"Mengevaluasi dampak dan upaya mengatasi pengangguran pada kasus nyata","level":"C4","tipe":"PGK","sukar":"Sukar","stem":"Pemerintah suatu daerah berupaya menurunkan angka pengangguran yang cukup tinggi akibat penutupan beberapa pabrik. Pernyataan yang tepat mengenai dampak dan upaya mengatasi pengangguran tersebut adalah .... (Jawaban benar lebih dari satu)","opsi":["Pengangguran yang tinggi dapat meningkatkan angka kemiskinan","Pelatihan kewirausahaan dapat membantu masyarakat menciptakan lapangan kerja sendiri","Membiarkan pabrik tutup tanpa solusi merupakan langkah terbaik bagi daerah","Menarik investasi baru dapat membuka lapangan kerja bagi masyarakat terdampak","Pengangguran tidak berdampak apa pun terhadap kondisi sosial masyarakat"],"kunci":["A","B","D"]},{"no":38,"materi":"Jenis-Jenis Investasi","indikator":"Mengidentifikasi investasi riil dari kasus kepemilikan aset","level":"C2","tipe":"PG","sukar":"Mudah","stem":"Pak Hadi membeli sebidang tanah di pinggir kota dengan harapan harganya akan naik pada beberapa tahun mendatang. Investasi yang dilakukan Pak Hadi termasuk jenis investasi ....","opsi":["Finansial","Riil","Saham","Obligasi"],"kunci":"B"},{"no":39,"materi":"Jenis-Jenis Investasi","indikator":"Membandingkan tingkat risiko dan keuntungan instrumen investasi","level":"C3","tipe":"PG","sukar":"Sedang","stem":"Bu Nita menyimpan sebagian uangnya di bank dalam bentuk deposito berjangka karena menginginkan bunga tetap dengan risiko rendah, sedangkan rekannya memilih membeli saham perusahaan karena berharap keuntungan lebih besar meski risikonya lebih tinggi. Perbandingan yang tepat antara kedua instrumen investasi tersebut adalah ....","opsi":["Deposito berisiko tinggi, sedangkan saham berisiko rendah","Deposito dan saham memiliki tingkat risiko dan potensi keuntungan yang sama","Deposito cenderung berisiko rendah dengan keuntungan relatif stabil, sedangkan saham berisiko lebih tinggi dengan potensi keuntungan lebih besar","Saham tidak memiliki risiko sama sekali bagi pemiliknya"],"kunci":"C"},{"no":40,"materi":"Jenis-Jenis Investasi","indikator":"Mengevaluasi karakteristik berbagai jenis investasi pada kasus keluarga","level":"C4","tipe":"PGK","sukar":"Sukar","stem":"Seorang pelajar SMP mendapatkan penjelasan dari orang tuanya tentang beberapa pilihan investasi: menabung emas, membeli saham perusahaan, menyimpan deposito di bank, dan membeli obligasi pemerintah. Pernyataan yang tepat mengenai jenis-jenis investasi tersebut adalah .... (Jawaban benar lebih dari satu)","opsi":["Emas termasuk contoh investasi riil yang nilainya cenderung naik dalam jangka panjang","Saham dan obligasi termasuk contoh investasi finansial","Semua jenis investasi memiliki tingkat risiko yang sama besar","Obligasi pemerintah umumnya dianggap relatif lebih aman dibandingkan saham","Investasi sebaiknya dipilih tanpa mempertimbangkan tujuan dan jangka waktu"],"kunci":["A","B","D"]}];
+const HURUF = ["A","B","C","D","E"];
+const DURATION_SECONDS = 40*60;
+
+// ======================================================================
+// KONEKSI KE GOOGLE SHEETS (opsional)
+// Tempel URL Web App Google Apps Script kamu di bawah ini (lihat panduan
+// "Cara Menghubungkan ke Google Sheets" yang disertakan terpisah).
+// Kosongkan ("") jika tidak ingin mengirim hasil otomatis ke spreadsheet
+// — tombol "Unduh Hasil (Excel)" tetap berfungsi seperti biasa.
+// ======================================================================
+const SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyt8sJjdyIHs5rm_aoKVFd0-Km_ACdENClrxI8-JXDG-YMOpURZ1zDfrn_RO37Ah3yunQ/exec";
+
+let state = {
+  nama:"", kelas:"",
+  current:0,
+  answers:{}, // no -> array of selected letters (or single letter for PG stored as [letter])
+  tabSwitchCount:0,
+  timeLeft:DURATION_SECONDS,
+  timerHandle:null,
+  submitted:false,
+  fullscreenExitCount:0
+};
+
+// ---------- SECURITY: copy/paste/context-menu block ----------
+["copy","cut","paste"].forEach(evt=>{
+  document.addEventListener(evt, e=>{ e.preventDefault(); return false; });
+});
+document.addEventListener("selectstart", e=>{
+  if(e.target && (e.target.tagName==="INPUT")) return true;
+  e.preventDefault();
+});
+document.addEventListener("keydown", e=>{
+  if((e.ctrlKey||e.metaKey) && ["c","v","x","u","s","p"].includes(e.key.toLowerCase())){
+    e.preventDefault();
+  }
+  if(e.key === "F12") e.preventDefault();
+});
+
+// ---------- TAB SWITCH DETECTION ----------
+document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden && state.current !== null && !state.submitted && examStarted()){
+    state.tabSwitchCount++;
+    showExamWarn(`⚠ Terdeteksi perpindahan tab/aplikasi (ke-${state.tabSwitchCount}). Aktivitas ini tercatat dalam laporan hasil.`);
+  }
+});
+function examStarted(){
+  return document.getElementById("screen-exam").classList.contains("active");
+}
+
+// ---------- FULLSCREEN LOCK ----------
+function requestFS(){
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+  if(req) return req.call(el);
+  return Promise.resolve();
+}
+function isFullscreen(){
+  return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+}
+["fullscreenchange","webkitfullscreenchange","msfullscreenchange"].forEach(evt=>{
+  document.addEventListener(evt, ()=>{
+    if(!isFullscreen() && examStarted() && !state.submitted){
+      state.fullscreenExitCount++;
+      document.getElementById("lockscreen").classList.add("show");
+    } else {
+      document.getElementById("lockscreen").classList.remove("show");
+    }
+  });
+});
+function reenterFullscreen(){
+  requestFS().then(()=>{ document.getElementById("lockscreen").classList.remove("show"); });
+}
+
+// ---------- START ----------
+function startExam(){
+  const nama = document.getElementById("inputNama").value.trim();
+  const kelas = document.getElementById("inputKelas").value.trim();
+  const warn = document.getElementById("startWarn");
+  if(!nama || !kelas){
+    warn.textContent = "Nama dan kelas wajib diisi sebelum memulai asesmen.";
+    warn.classList.add("show");
+    return;
+  }
+  warn.classList.remove("show");
+  state.nama = nama; state.kelas = kelas;
+
+  requestFS().finally(()=>{
+    document.getElementById("screen-start").classList.remove("active");
+    document.getElementById("screen-exam").classList.add("active");
+    document.getElementById("topbarTitle").textContent = nama + " — " + kelas;
+    buildNavGrid();
+    renderQuestion();
+    startTimer();
+  });
+}
+
+// ---------- TIMER ----------
+function startTimer(){
+  updateTimerDisplay();
+  state.timerHandle = setInterval(()=>{
+    state.timeLeft--;
+    updateTimerDisplay();
+    if(state.timeLeft <= 0){
+      clearInterval(state.timerHandle);
+      submitExam(true);
+    }
+  },1000);
+}
+function updateTimerDisplay(){
+  const m = Math.floor(state.timeLeft/60).toString().padStart(2,"0");
+  const s = Math.floor(state.timeLeft%60).toString().padStart(2,"0");
+  const box = document.getElementById("timerBox");
+  box.textContent = `${m}:${s}`;
+  box.classList.toggle("warn", state.timeLeft <= 300);
+}
+
+// ---------- NAV GRID ----------
+function buildNavGrid(){
+  const grid = document.getElementById("navGrid");
+  grid.innerHTML = "";
+  QUESTIONS.forEach((q,i)=>{
+    const b = document.createElement("button");
+    b.textContent = q.no;
+    b.onclick = ()=>{ state.current=i; renderQuestion(); };
+    b.id = "navbtn-"+i;
+    grid.appendChild(b);
+  });
+}
+function refreshNavGrid(){
+  QUESTIONS.forEach((q,i)=>{
+    const b = document.getElementById("navbtn-"+i);
+    b.classList.toggle("current", i===state.current);
+    b.classList.toggle("answered", !!(state.answers[q.no] && state.answers[q.no].length));
+  });
+  const answered = Object.values(state.answers).filter(a=>a && a.length).length;
+  document.getElementById("answeredCount").textContent = answered;
+}
+
+// ---------- RENDER QUESTION ----------
+function renderQuestion(){
+  const q = QUESTIONS[state.current];
+  document.getElementById("qMeta").textContent = `Soal ${q.no} dari 40 • ${q.tipe==="PGK" ? "Pilihan Ganda Kompleks (jawaban benar lebih dari satu)" : "Pilihan Ganda"} • Tingkat: ${q.sukar}`;
+  document.getElementById("qStem").textContent = q.stem;
+  const wrap = document.getElementById("qOptions");
+  wrap.innerHTML = "";
+  const selected = state.answers[q.no] || [];
+  q.opsi.forEach((op,i)=>{
+    const letter = HURUF[i];
+    const row = document.createElement("div");
+    row.className = "opt" + (selected.includes(letter) ? " checked":"");
+    row.innerHTML = `<input type="${q.tipe==="PGK"?"checkbox":"radio"}" ${selected.includes(letter)?"checked":""}><span class="lab">${letter}.</span><span class="txt">${op}</span>`;
+    row.onclick = ()=> toggleAnswer(q, letter);
+    wrap.appendChild(row);
+  });
+  document.getElementById("btnPrev").disabled = state.current===0;
+  document.getElementById("btnNext").disabled = state.current===QUESTIONS.length-1;
+  refreshNavGrid();
+}
+function toggleAnswer(q, letter){
+  let cur = state.answers[q.no] || [];
+  if(q.tipe==="PGK"){
+    if(cur.includes(letter)) cur = cur.filter(l=>l!==letter);
+    else cur = [...cur, letter];
+  } else {
+    cur = [letter];
+  }
+  state.answers[q.no] = cur;
+  renderQuestion();
+}
+function goNext(){ if(state.current<QUESTIONS.length-1){ state.current++; renderQuestion(); } }
+function goPrev(){ if(state.current>0){ state.current--; renderQuestion(); } }
+
+function showExamWarn(msg){
+  const w = document.getElementById("examWarn");
+  w.textContent = msg;
+  w.classList.add("show");
+  setTimeout(()=>w.classList.remove("show"), 6000);
+}
+
+// ---------- SUBMIT / SCORING ----------
+function confirmSubmit(){
+  const answered = Object.values(state.answers).filter(a=>a && a.length).length;
+  const msg = answered < 40
+    ? `Masih ada ${40-answered} soal yang belum dijawab. Yakin ingin mengumpulkan jawaban sekarang?`
+    : "Yakin ingin mengumpulkan jawaban sekarang? Jawaban tidak dapat diubah lagi setelah dikumpulkan.";
+  if(confirm(msg)) submitExam(false);
+}
+
+function scoreQuestion(q){
+  const chosen = (state.answers[q.no] || []).slice().sort();
+  const kunci = (Array.isArray(q.kunci) ? q.kunci.slice() : [q.kunci]).sort();
+  if(q.tipe === "PG"){
+    const correct = chosen.length===1 && chosen[0]===kunci[0];
+    return { skor: correct?1:0, maks:1, benar:correct };
+  } else {
+    // PGK rubric: 2 = seluruh benar tanpa yang salah; 1 = sebagian benar (1-2 opsi benar, maks 1 salah); 0 = lainnya
+    if(chosen.length===0) return { skor:0, maks:2, benar:false };
+    const salahDipilih = chosen.filter(c=>!kunci.includes(c)).length;
+    const benarDipilih = chosen.filter(c=>kunci.includes(c)).length;
+    if(salahDipilih===0 && benarDipilih===kunci.length) return { skor:2, maks:2, benar:true };
+    if(salahDipilih<=1 && benarDipilih>=1) return { skor:1, maks:2, benar:false };
+    return { skor:0, maks:2, benar:false };
+  }
+}
+
+function submitExam(autoSubmit){
+  if(state.submitted) return;
+  state.submitted = true;
+  clearInterval(state.timerHandle);
+
+  let totalSkor=0, totalMaks=0, fullCorrect=0;
+  const recap = [];
+  QUESTIONS.forEach(q=>{
+    const r = scoreQuestion(q);
+    totalSkor += r.skor; totalMaks += r.maks;
+    if(r.benar) fullCorrect++;
+    const chosen = (state.answers[q.no]||[]).join(", ") || "(kosong)";
+    const kunci = Array.isArray(q.kunci) ? q.kunci.join(", ") : q.kunci;
+    recap.push({no:q.no, tipe:q.tipe, jawaban:chosen, kunci:kunci, skor:r.skor, maks:r.maks});
+  });
+  const nilaiAkhir = Math.round((totalSkor/totalMaks)*1000)/10;
+
+  state.result = { totalSkor, totalMaks, nilaiAkhir, fullCorrect, recap };
+
+  document.getElementById("screen-exam").classList.remove("active");
+  document.getElementById("screen-result").classList.add("active");
+  document.getElementById("lockscreen").classList.remove("show");
+  if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+
+  document.getElementById("finalScore").textContent = nilaiAkhir;
+  document.getElementById("rawScore").textContent = totalSkor;
+  document.getElementById("fullCorrect").textContent = fullCorrect;
+  document.getElementById("tabSwitchCount").textContent = state.tabSwitchCount;
+
+  const pred = predikat(nilaiAkhir);
+  document.getElementById("predikatBox").innerHTML = `<span class="predikat" style="background:${pred.color};color:#fff;">${pred.label}</span>`;
+
+  const table = document.getElementById("recapTable");
+  let html = "<tr><th>No</th><th>Tipe</th><th>Jawaban Peserta</th><th>Kunci</th><th>Skor</th></tr>";
+  recap.forEach(r=>{
+    html += `<tr><td>${r.no}</td><td>${r.tipe}</td><td>${r.jawaban}</td><td>${r.kunci}</td><td>${r.skor}/${r.maks}</td></tr>`;
+  });
+  table.innerHTML = html;
+
+  if(autoSubmit) alert("Waktu pengerjaan telah habis. Jawaban dikumpulkan secara otomatis.");
+
+  sendResultsToSheet();
+}
+
+// ---------- KIRIM OTOMATIS KE GOOGLE SHEETS ----------
+function sendResultsToSheet(){
+  const statusBox = document.getElementById("sheetStatus");
+  if(!SHEET_WEBHOOK_URL){
+    statusBox.textContent = "Pengiriman otomatis ke spreadsheet belum diaktifkan. Unduh hasil Excel dan kirimkan ke guru secara manual.";
+    return;
+  }
+  statusBox.textContent = "Mengirim hasil ke spreadsheet guru ...";
+  const payload = {
+    nama: state.nama,
+    kelas: state.kelas,
+    nilaiAkhir: state.result.nilaiAkhir,
+    totalSkor: state.result.totalSkor,
+    totalMaks: state.result.totalMaks,
+    tabSwitchCount: state.tabSwitchCount,
+    fullscreenExitCount: state.fullscreenExitCount,
+    recap: state.result.recap
+  };
+  fetch(SHEET_WEBHOOK_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  }).then(()=>{
+    statusBox.textContent = "✓ Hasil terkirim ke spreadsheet guru.";
+  }).catch(()=>{
+    statusBox.textContent = "⚠ Gagal mengirim otomatis (periksa koneksi internet). Silakan unduh hasil Excel dan kirimkan secara manual.";
+  });
+}
+
+function predikat(n){
+  if(n>=90) return {label:"Sangat Baik", color:"#1E7A46"};
+  if(n>=75) return {label:"Baik", color:"#2E6DA4"};
+  if(n>=60) return {label:"Cukup", color:"#C9A24B"};
+  return {label:"Perlu Bimbingan", color:"#B3261E"};
+}
+
+// ---------- EXCEL EXPORT (SheetJS) ----------
+function downloadExcel(){
+  const r = state.result;
+  const rows = [["Nama","Kelas","No Soal","Tipe Soal","Jawaban Peserta","Kunci Jawaban","Skor Butir","Skor Maksimal Butir","Skor Total","Skor Maksimal Total","Nilai Akhir","Jumlah Perpindahan Tab"]];
+  r.recap.forEach(item=>{
+    rows.push([state.nama, state.kelas, item.no, item.tipe, item.jawaban, item.kunci, item.skor, item.maks,
+      r.totalSkor, r.totalMaks, r.nilaiAkhir, state.tabSwitchCount]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"] = [{wch:20},{wch:8},{wch:8},{wch:10},{wch:16},{wch:12},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:14}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Hasil Asesmen");
+  const filename = `Hasil_Asesmen_${state.nama.replace(/\\s+/g,"_")}.xlsx`;
+  XLSX.writeFile(wb, filename);
+}
+</script>
+</body>
+</html>
